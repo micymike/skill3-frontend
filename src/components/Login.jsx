@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -7,40 +7,119 @@ const Login = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState({ code: '', message: '' });
   const navigate = useNavigate();
 
+  // Handle OAuth redirect callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get('error');
+    const errorMessage = params.get('error_description');
+    
+    if (errorCode) {
+      setError({ code: errorCode, message: errorMessage || 'Authentication failed' });
+    }
+  }, []);
+
   const handleLinkedInLogin = () => {
-    window.location.href = 'https://skill3-login.onrender.com/api/auth/linkedin/login';
+    // Store the current URL in localStorage for redirect after login
+    localStorage.setItem('loginRedirectUrl', window.location.href);
+    window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/linkedin/login`;
+  };
+
+  const validatePassword = (password) => {
+    const errors = [];
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError({ code: '', message: '' });
+
+    // Client-side password validation
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      setError({ 
+        code: 'invalid_password', 
+        message: passwordErrors.join('. ') 
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('https://skill3-login.onrender.com/register', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password, name }),
+        credentials: 'include'
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        throw {
+          code: data.code || 'unknown_error',
+          message: data.message || 'An unexpected error occurred'
+        };
+      }
+
+      // Store the session data from Supabase
+      if (data.session) {
+        localStorage.setItem('supabase.auth.token', data.session.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
       }
 
       // Handle successful registration
-      navigate('/dashboard'); // Adjust based on your routing setup
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError({
+        code: err.code || 'request_failed',
+        message: err.message || 'Failed to connect to the server'
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to render error message with appropriate styling
+  const renderError = () => {
+    if (!error.message) return null;
+
+    let errorClass = 'text-red-500 text-sm text-center';
+    
+    // Add specific styling based on error code
+    switch (error.code) {
+      case 'invalid_password':
+        errorClass += ' bg-red-100/10 p-2 rounded';
+        break;
+      case 'email_taken':
+        errorClass += ' font-medium';
+        break;
+      default:
+        errorClass += ' italic';
+    }
+
+    return (
+      <div className={errorClass}>
+        {error.message}
+      </div>
+    );
   };
 
   return (
@@ -90,9 +169,7 @@ const Login = () => {
 
             {/* Sign Up Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="text-red-500 text-sm text-center">{error}</div>
-              )}
+              {renderError()}
               
               <div>
                 <label htmlFor="email" className="sr-only">
