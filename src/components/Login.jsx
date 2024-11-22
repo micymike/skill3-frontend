@@ -48,7 +48,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError({ code: '', message: '' });
-
+  
     // Client-side password validation
     const passwordErrors = validatePassword(password);
     if (passwordErrors.length > 0) {
@@ -59,7 +59,7 @@ const Login = () => {
       setIsLoading(false);
       return;
     }
-
+  
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/register`, {
         method: 'POST',
@@ -69,22 +69,31 @@ const Login = () => {
         body: JSON.stringify({ email, password, name }),
         credentials: 'include'
       });
-
+  
+      // Check if the response is not empty and is JSON
+      const contentType = response.headers.get('content-type');
+      if (!response.ok || !contentType || !contentType.includes('application/json')) {
+        throw {
+          code: 'invalid_response',
+          message: 'Invalid server response'
+        };
+      }
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw {
           code: data.code || 'unknown_error',
           message: data.message || 'An unexpected error occurred'
         };
       }
-
+  
       // Store the session data from Supabase
       if (data.session) {
         localStorage.setItem('supabase.auth.token', data.session.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
       }
-
+  
       // Handle successful registration
       navigate('/dashboard');
     } catch (err) {
@@ -96,6 +105,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+  
 
   // Function to render error message with appropriate styling
   const renderError = () => {
