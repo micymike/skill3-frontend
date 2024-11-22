@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Ensure HTTPS is always used
-const API_URL = (process?.env?.REACT_APP_API_URL || 'https://skill3-login.onrender.com').replace('http://', 'https://');
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,7 +12,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState({ code: '', message: '' });
-  const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -24,10 +24,8 @@ const Login = () => {
   }, []);
 
   const handleLinkedInLogin = () => {
-    const currentUrl = window.location.href;
-    const redirectUrl = currentUrl.includes('https://') ? currentUrl : currentUrl.replace('http://', 'https://');
-    localStorage.setItem('loginRedirectUrl', redirectUrl);
-    window.location.href = `${API_URL}/api/auth/linkedin/login`;
+    localStorage.setItem('loginRedirectUrl', window.location.href);
+    window.location.href = `${apiUrl}/api/auth/linkedin/login`;
   };
 
   const validatePassword = (password) => {
@@ -51,30 +49,23 @@ const Login = () => {
       return;
     }
 
+
+
     try {
-      const response = await fetch(`${API_URL}/register`, {
+      const response = await fetch(`${apiUrl}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Sec-Fetch-Site': 'same-origin',
-          'Sec-Fetch-Mode': 'cors',
         },
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          name,
-          redirectUrl: window.location.origin + '/dashboard' // Add secure redirect URL
-        }),
-        credentials: 'include',
-        mode: 'cors'
+        body: JSON.stringify({ email, password, name }),
+        credentials: 'include'
       });
 
       const contentType = response.headers.get('content-type');
       if (!response.ok || !contentType || !contentType.includes('application/json')) {
         throw {
           code: 'invalid_response',
-          message: response.status === 403 ? 'Access forbidden. Please try again.' : 'Invalid server response'
+          message: 'Invalid server response'
         };
       }
 
@@ -90,14 +81,11 @@ const Login = () => {
       if (data.session) {
         localStorage.setItem('supabase.auth.token', data.session.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Redirect to dashboard after successful login
-        navigate('/dashboard');
       }
     } catch (err) {
       setError({
         code: err.code || 'unknown_error',
-        message: err.message || 'An unexpected error occurred. Please try again.'
+        message: err.message || 'An unexpected error occurred'
       });
     } finally {
       setIsLoading(false);
@@ -127,7 +115,6 @@ const Login = () => {
           <div className="space-y-4">
             <div className="space-y-3">
               <button
-                type="button"
                 onClick={handleLinkedInLogin}
                 className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-600 rounded-lg text-white hover:bg-gray-800 transition-colors"
               >
