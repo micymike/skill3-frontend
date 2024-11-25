@@ -24,7 +24,7 @@ const Login = () => {
 
   const handleLinkedInLogin = () => {
     localStorage.setItem('loginRedirectUrl', window.location.href);
-    window.location.href = `${apiUrl}/api/auth/linkedin`;
+    window.location.href = `${apiUrl}/api/auth/linkedin/login`;
   };
 
   const validatePassword = (password) => {
