@@ -1,56 +1,114 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import Login from './components/Login';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ChakraProvider, CSSReset } from '@chakra-ui/react';
+import LoginPage from './components/LoginPage';
 import HomePage from './components/HomePage';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#0077B5', // LinkedIn blue
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  },
-});
+import CVUpload from './components/onboarding/CVUpload';
+import CareerInfo from './components/onboarding/CareerInfo';
+import CareerAspirations from './components/onboarding/CareerAspirations';
+import IndustryPreferences from './components/onboarding/IndustryPreferences';
+import Personality from './components/onboarding/Personality';
+import { useState, useEffect } from 'react';
 
 function App() {
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/" element={<Navigate to="/home" replace />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
-  );
-}
-
-// Handle the OAuth callback and token storage
-function AuthCallback() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [onboardingStep, setOnboardingStep] = useState(null);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      localStorage.setItem('token', token);
-      navigate('/home');
-    } else {
-      navigate('/login');
+    const params = new URLSearchParams(window.location.search);
+    const newToken = params.get('token');
+    const step = params.get('step');
+    
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      if (step) {
+        setOnboardingStep(parseInt(step));
+      }
     }
-  }, [navigate, searchParams]);
+  }, []);
 
-  return <div>Authenticating...</div>;
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setOnboardingStep(null);
+  };
+
+  const PrivateRoute = ({ children }) => {
+    return token ? children : <Navigate to="/login" />;
+  };
+
+  const OnboardingRoute = ({ children, step }) => {
+    if (!token) return <Navigate to="/login" />;
+    if (onboardingStep && step !== onboardingStep) {
+      return <Navigate to={`/onboarding/step-${onboardingStep}`} />;
+    }
+    return children;
+  };
+
+  return (
+    <ChakraProvider>
+      <CSSReset />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          
+          <Route
+            path="/onboarding/cv"
+            element={
+              <OnboardingRoute step={1}>
+                <CVUpload token={token} />
+              </OnboardingRoute>
+            }
+          />
+          
+          <Route
+            path="/onboarding/career-info"
+            element={
+              <OnboardingRoute step={2}>
+                <CareerInfo token={token} />
+              </OnboardingRoute>
+            }
+          />
+          
+          <Route
+            path="/onboarding/career-aspirations"
+            element={
+              <OnboardingRoute step={3}>
+                <CareerAspirations token={token} />
+              </OnboardingRoute>
+            }
+          />
+          
+          <Route
+            path="/onboarding/industry-preferences"
+            element={
+              <OnboardingRoute step={4}>
+                <IndustryPreferences token={token} />
+              </OnboardingRoute>
+            }
+          />
+          
+          <Route
+            path="/onboarding/personality"
+            element={
+              <OnboardingRoute step={5}>
+                <Personality token={token} />
+              </OnboardingRoute>
+            }
+          />
+          
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <HomePage onLogout={handleLogout} token={token} />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </ChakraProvider>
+  );
 }
 
 export default App;
