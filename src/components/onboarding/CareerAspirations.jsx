@@ -30,7 +30,7 @@ const CareerAspirations = ({ token }) => {
     setLoading(true);
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/onboarding/career-aspirations`,
+        `${import.meta.env.VITE_API_URL}/v1/onboarding/career-aspirations`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` }

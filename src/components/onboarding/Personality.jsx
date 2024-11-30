@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -17,7 +17,7 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 
-const Personality = ({ token }) => {
+const Personality = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const [formData, setFormData] = useState({
@@ -26,25 +26,55 @@ const Personality = ({ token }) => {
   });
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/onboarding/personality`,
+        `${import.meta.env.VITE_API_URL}/v1/onboarding/personality`,
         formData,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
         }
       );
+      
+      toast({
+        title: 'Personality info updated successfully',
+        status: 'success',
+        duration: 3000,
+      });
       navigate('/dashboard');
     } catch (error) {
       console.error('Error updating personality info:', error);
+      const errorMessage = error.response?.data?.error || 'Error updating personality info';
       toast({
-        title: 'Error updating personality information',
+        title: 'Error',
+        description: errorMessage,
         status: 'error',
         duration: 3000,
       });
+      
+      // If unauthorized, redirect to login
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
     }
     setLoading(false);
   };

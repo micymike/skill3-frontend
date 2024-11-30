@@ -29,7 +29,7 @@ const CareerInfo = ({ token }) => {
   useEffect(() => {
     const fetchUniversities = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/universities`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/v1/universities`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUniversities(response.data);
@@ -50,7 +50,7 @@ const CareerInfo = ({ token }) => {
       if (formData.university_id && formData.university_id !== 'other') {
         try {
           const response = await axios.get(
-            `${process.env.REACT_APP_API_URL}/api/education-programs/${formData.university_id}`,
+            `${import.meta.env.VITE_API_URL}/v1/education-programs/${formData.university_id}`,
             {
               headers: { Authorization: `Bearer ${token}` }
             }
@@ -74,7 +74,7 @@ const CareerInfo = ({ token }) => {
     setLoading(true);
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/onboarding/career-info`,
+        `${import.meta.env.VITE_API_URL}/v1/onboarding/career-info`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` }

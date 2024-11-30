@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, CSSReset } from '@chakra-ui/react';
-import LoginPage from './components/LoginPage';
+import Login from './components/auth/Login';
+import SignUp from './components/auth/SignUp';
+import Dashboard from './components/Dashboard';
 import HomePage from './components/HomePage';
 import CVUpload from './components/onboarding/CVUpload';
 import CareerInfo from './components/onboarding/CareerInfo';
@@ -50,8 +52,14 @@ function App() {
       <CSSReset />
       <Router>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
           <Route
             path="/onboarding/cv"
             element={
@@ -60,7 +68,6 @@ function App() {
               </OnboardingRoute>
             }
           />
-          
           <Route
             path="/onboarding/career-info"
             element={
@@ -69,7 +76,6 @@ function App() {
               </OnboardingRoute>
             }
           />
-          
           <Route
             path="/onboarding/career-aspirations"
             element={
@@ -78,7 +84,6 @@ function App() {
               </OnboardingRoute>
             }
           />
-          
           <Route
             path="/onboarding/industry-preferences"
             element={
@@ -87,22 +92,12 @@ function App() {
               </OnboardingRoute>
             }
           />
-          
           <Route
             path="/onboarding/personality"
             element={
               <OnboardingRoute step={5}>
                 <Personality token={token} />
               </OnboardingRoute>
-            }
-          />
-          
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <HomePage onLogout={handleLogout} token={token} />
-              </PrivateRoute>
             }
           />
         </Routes>

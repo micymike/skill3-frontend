@@ -38,7 +38,7 @@ const IndustryPreferences = ({ token }) => {
     const fetchIndustries = async () => {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/industries`,
+          `${import.meta.env.VITE_API_URL}/v1/industries`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -95,7 +95,7 @@ const IndustryPreferences = ({ token }) => {
     setLoading(true);
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/onboarding/industry-preferences`,
+        `${import.meta.env.VITE_API_URL}/v1/onboarding/industry-preferences`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` }
