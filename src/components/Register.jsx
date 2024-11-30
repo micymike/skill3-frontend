@@ -84,35 +84,11 @@ const Register = () => {
     <div className="flex h-screen">
       {/* Left Section - Image */}
       <div className="hidden md:flex w-1/2 bg-black relative overflow-hidden">
-        <Carousel
-          autoPlay
-          infiniteLoop
-          showThumbs={false}
-          interval={3000}
-          transitionTime={500}
-        >
-          <div>
-            <img
-              src="https://source.unsplash.com/random/800x600/?office"
-              alt="Slide 1"
-              className="h-screen object-cover"
-            />
-          </div>
-          <div>
-            <img
-              src="https://source.unsplash.com/random/800x600/?business"
-              alt="Slide 2"
-              className="h-screen object-cover"
-            />
-          </div>
-          <div>
-            <img
-              src="https://source.unsplash.com/random/800x600/?corporate"
-              alt="Slide 3"
-              className="h-screen object-cover"
-            />
-          </div>
-        </Carousel>
+        <img
+          src="/login.jpeg"
+          alt="Professional Networking"
+          className="absolute w-full h-full object-cover"
+        />
       </div>
 
       {/* Right Section - Form */}

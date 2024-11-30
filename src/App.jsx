@@ -59,7 +59,7 @@ function App() {
               <Dashboard />
             </PrivateRoute>
           } />
-          <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/signup" replace />} />
           <Route
             path="/onboarding/cv"
             element={
