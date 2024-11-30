@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, CSSReset } from '@chakra-ui/react';
-import Login from './components/auth/Login';
 import SignUp from './components/auth/SignUp';
+import Login from './components/auth/Login';
 import Dashboard from './components/Dashboard';
 import HomePage from './components/HomePage';
 import CVUpload from './components/onboarding/CVUpload';

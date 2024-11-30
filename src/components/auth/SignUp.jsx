@@ -1,351 +1,244 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  VStack,
-  Text,
-  useToast,
-  Select,
-  Progress,
-  Container,
-  Heading,
-  useColorModeValue,
-  Switch,
-  FormHelperText,
-  Flex,
-  Icon,
-  Badge
-} from '@chakra-ui/react';
-import { FaCloudUploadAlt, FaUniversity, FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { FaLinkedin } from "react-icons/fa";
+import { Box, Progress, Text, useToast } from '@chakra-ui/react';
+import axios from "axios";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const [step, setStep] = useState(1);
-  const [universities, setUniversities] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [wantToUploadCV, setWantToUploadCV] = useState(true);
-
-  // Dark theme colors
-  const bgColor = useColorModeValue('gray.800', 'gray.800');
-  const textColor = useColorModeValue('gray.100', 'gray.100');
-  const borderColor = useColorModeValue('gray.600', 'gray.600');
-  const inputBgColor = useColorModeValue('gray.700', 'gray.700');
-
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    fullName: '',
-    university: '',
-    program: '',
-    graduationYear: '',
-    cvFile: null
+    email: "",
+    password: "",
+    name: "",
   });
 
-  // Fetch universities on component mount
-  useEffect(() => {
-    fetchUniversities();
-  }, []);
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    
+    // Length check
+    if (password.length >= 8) strength += 1;
+    if (password.length >= 12) strength += 1;
+    
+    // Character type checks
+    if (/[A-Z]/.test(password)) strength += 1;  // Uppercase
+    if (/[a-z]/.test(password)) strength += 1;  // Lowercase
+    if (/[0-9]/.test(password)) strength += 1;  // Numbers
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;  // Special characters
+    
+    return {
+      score: strength,
+      color: strength < 2 ? "red.500" : strength < 4 ? "orange.500" : strength < 6 ? "yellow.500" : "green.500",
+      text: strength < 2 ? "Weak" : strength < 4 ? "Fair" : strength < 6 ? "Good" : "Strong"
+    };
+  };
 
-  const fetchUniversities = async () => {
-    try {
-      console.log('Fetching universities from:', `${import.meta.env.VITE_API_URL}/v1/universities`);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/universities`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        mode: 'cors',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Universities data:', data);
-      setUniversities(data);
-    } catch (error) {
-      console.error('Error fetching universities:', error);
-      toast({
-        title: 'Error fetching universities',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
+  const handleLinkedInLogin = () => {
+    localStorage.setItem("loginRedirectUrl", window.location.href);
+    window.location.href = "/v1/auth/linkedin/login";
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({
-        ...prev,
-        cvFile: file
-      }));
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      if (step === 1) {
-        // Basic registration
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            name: formData.fullName
-          })
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/v1/auth/register`,
+        formData
+      );
+      if (response.data.access_token) {
+        localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        toast({
+          title: "Registration successful",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
         });
-
-        if (!response.ok) {
-          throw new Error('Registration failed');
-        }
-
-        const data = await response.json();
-        localStorage.setItem('token', data.access_token);
-        
-        if (wantToUploadCV) {
-          setStep(2);
-        } else {
-          navigate('/dashboard');
-        }
-      } else if (step === 2 && formData.cvFile) {
-        setIsUploading(true);
-        const formDataObj = new FormData();
-        formDataObj.append('cv', formData.cvFile);
-        formDataObj.append('university', formData.university || 'Not Specified');
-        formDataObj.append('program', formData.program || 'Not Specified');
-        formDataObj.append('graduationYear', formData.graduationYear || 'Not Specified');
-
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/cv/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formDataObj
-        });
-
-        if (!response.ok) {
-          throw new Error('CV upload failed');
-        }
-
-        setIsUploading(false);
-        navigate('/dashboard');
+        navigate("/dashboard");
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Registration error:", error);
+      let errorMessage = "An error occurred during registration";
+
+      if (error.response) {
+        if (error.response.status === 409) {
+          errorMessage =
+            "This email is already registered. Please use a different email or sign in.";
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+
       toast({
-        title: 'Error',
-        description: error.message,
-        status: 'error',
+        title: "Registration failed",
+        description: errorMessage,
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
-      setIsUploading(false);
     }
   };
 
-  const renderStep1 = () => (
-    <VStack spacing={4} align="stretch">
-      <FormControl isRequired>
-        <FormLabel><Icon as={FaUser} mr={2} />Full Name</FormLabel>
-        <Input
-          name="fullName"
-          value={formData.fullName}
-          onChange={handleInputChange}
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-      </FormControl>
-
-      <FormControl isRequired>
-        <FormLabel><Icon as={FaEnvelope} mr={2} />Email</FormLabel>
-        <Input
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-      </FormControl>
-
-      <FormControl isRequired>
-        <FormLabel><Icon as={FaLock} mr={2} />Password</FormLabel>
-        <Input
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleInputChange}
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-      </FormControl>
-
-      <FormControl display='flex' alignItems='center'>
-        <FormLabel htmlFor='cv-upload' mb='0'>
-          Want to upload your CV now?
-        </FormLabel>
-        <Switch
-          id='cv-upload'
-          isChecked={wantToUploadCV}
-          onChange={(e) => setWantToUploadCV(e.target.checked)}
-          colorScheme='teal'
-        />
-      </FormControl>
-    </VStack>
-  );
-
-  const renderStep2 = () => (
-    <VStack spacing={4} align="stretch">
-      <FormControl>
-        <FormLabel><Icon as={FaUniversity} mr={2} />University</FormLabel>
-        <Select
-          name="university"
-          value={formData.university}
-          onChange={handleInputChange}
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        >
-          <option value="">Select University</option>
-          {universities.map((uni) => (
-            <option key={uni.name} value={uni.name}>
-              {uni.name} - {uni.city}, {uni.country}
-            </option>
-          ))}
-        </Select>
-        <FormHelperText>Optional - Select your university</FormHelperText>
-      </FormControl>
-
-      <FormControl>
-        <FormLabel>Program/Course</FormLabel>
-        <Input
-          name="program"
-          value={formData.program}
-          onChange={handleInputChange}
-          placeholder="e.g., Computer Science"
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-        <FormHelperText>Optional - Enter your program or course</FormHelperText>
-      </FormControl>
-
-      <FormControl>
-        <FormLabel>Graduation Year</FormLabel>
-        <Input
-          name="graduationYear"
-          type="number"
-          value={formData.graduationYear}
-          onChange={handleInputChange}
-          placeholder="e.g., 2024"
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-        <FormHelperText>Optional - Enter your graduation year</FormHelperText>
-      </FormControl>
-
-      <FormControl>
-        <FormLabel>
-          <Icon as={FaCloudUploadAlt} mr={2} />
-          Upload CV
-        </FormLabel>
-        <Input
-          type="file"
-          onChange={handleFileChange}
-          accept=".pdf,.doc,.docx"
-          p={1}
-          bg={inputBgColor}
-          color={textColor}
-          borderColor={borderColor}
-        />
-      </FormControl>
-
-      {isUploading && (
-        <Progress
-          value={uploadProgress}
-          size="sm"
-          colorScheme="teal"
-          hasStripe
-          isAnimated
-        />
-      )}
-    </VStack>
-  );
-
   return (
-    <Container maxW="container.sm" py={8}>
-      <Box
-        p={8}
-        bg={bgColor}
-        boxShadow="xl"
-        borderRadius="lg"
-        color={textColor}
-      >
-        <VStack spacing={6}>
-          <Heading size="lg">
-            {step === 1 ? 'Create Account' : 'Complete Your Profile'}
-          </Heading>
-          
-          {step === 2 && (
-            <Badge colorScheme="teal" p={2} borderRadius="md">
-              Step 2 of 2 - Optional Information
-            </Badge>
-          )}
+    <div className="min-h-screen flex">
+      {/* Left side - Image */}
+      <div className="hidden md:flex w-1/2 bg-black relative overflow-hidden">
+        <img
+          src="/login.jpeg"
+          alt="Login Illustration"
+          className="absolute w-full h-full object-cover"
+        />
+      </div>
 
-          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-            {step === 1 ? renderStep1() : renderStep2()}
+      {/* Right side - Login Form */}
+      <div className="w-full md:w-1/2 bg-black p-8 flex flex-col justify-center">
+        <div className="max-w-md mx-auto w-full">
+          <div className="space-y-8">
+            {/* Logo and Header */}
+            <div className="text-center space-y-4">
+              <img
+                src="/logo.png"
+                alt="Skill3 Logo"
+                className="h-20 w-20 mx-auto object-contain"
+              />
+              <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
+              <p className="text-gray-400 text-lg">
+                Sign in to continue your journey
+              </p>
+            </div>
 
-            <Flex justify="space-between" mt={6}>
-              {step === 2 && (
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  colorScheme="gray"
-                >
-                  Skip
-                </Button>
-              )}
-              <Button
-                type="submit"
-                colorScheme="teal"
-                isLoading={isUploading}
-                ml={step === 2 ? 'auto' : '0'}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* LinkedIn Button */}
+              <button
+                type="button"
+                onClick={handleLinkedInLogin}
+                className="w-full flex items-center justify-center gap-2 bg-[#0077b5] text-white py-3 px-4 rounded-lg hover:bg-[#006291] transition-colors"
               >
-                {step === 1 ? (wantToUploadCV ? 'Next' : 'Sign Up') : 'Complete Profile'}
-              </Button>
-            </Flex>
-          </form>
-        </VStack>
-      </Box>
-    </Container>
+                <FaLinkedin className="text-xl" />
+                Sign up with LinkedIn
+              </button>
+
+              {/* Divider */}
+              <div className="relative flex items-center">
+                <div className="flex-grow border-t border-gray-700"></div>
+                <span className="flex-shrink mx-4 text-gray-400">or</span>
+                <div className="flex-grow border-t border-gray-700"></div>
+              </div>
+
+              {/* Email Input */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-300"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              {/* Name Input */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-300"
+                >
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-300"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <Progress
+                      value={(calculatePasswordStrength(formData.password).score / 6) * 100}
+                      size="sm"
+                      colorScheme={
+                        calculatePasswordStrength(formData.password).score < 2
+                          ? "red"
+                          : calculatePasswordStrength(formData.password).score < 4
+                          ? "orange"
+                          : calculatePasswordStrength(formData.password).score < 6
+                          ? "yellow"
+                          : "green"
+                      }
+                      borderRadius="full"
+                      bg="gray.700"
+                    />
+                    <Text
+                      fontSize="sm"
+                      color={calculatePasswordStrength(formData.password).color}
+                      mt={1}
+                    >
+                      Password Strength: {calculatePasswordStrength(formData.password).text}
+                    </Text>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+              >
+                Create Account
+              </button>
+
+              {/* Sign In Link */}
+              <p className="text-center text-gray-400">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="text-blue-500 hover:text-blue-400 font-medium"
+                >
+                  Sign In
+                </Link>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
