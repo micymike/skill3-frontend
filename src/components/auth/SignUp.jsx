@@ -42,7 +42,7 @@ const SignUp = () => {
 
   const fetchUniversities = async () => {
     try {
-      const response = await fetch('http://localhost:8000/v1/universities', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/universities`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ const SignUp = () => {
 
   const fetchPrograms = async (university) => {
     try {
-      const response = await fetch(`http://localhost:8000/v1/universities/${university}/programs`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/universities/${university}/programs`, {
         mode: 'cors',
         credentials: 'include'
       });
@@ -111,15 +111,16 @@ const SignUp = () => {
     try {
       // For step 1, register the user
       if (step === 1) {
-        const response = await fetch('http://localhost:8000/v1/auth/register', {
+        const { email, password, fullName } = formData;
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/auth/register`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            fullName: formData.fullName
+            email,
+            password,
+            name: fullName
           }),
           credentials: 'include'
         });
@@ -135,7 +136,7 @@ const SignUp = () => {
       } else {
         // For subsequent steps, update profile
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8000/v1/profile/update/${step}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/profile/update/${step}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -381,7 +382,7 @@ const SignUp = () => {
     const newUniversity = prompt('Enter the name of your university:');
     if (newUniversity?.trim()) {
       try {
-        const response = await fetch('http://localhost:8000/v1/universities/add', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/universities/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
