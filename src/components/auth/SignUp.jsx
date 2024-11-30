@@ -46,22 +46,21 @@ const SignUp = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
+        mode: 'cors',
         credentials: 'include'
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('Server error:', error);
-        throw new Error(error.details || error.error || 'Failed to fetch universities');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       setUniversities(data);
-      setError('');
     } catch (error) {
       console.error('Error fetching universities:', error);
-      setError(error.message || 'Failed to load universities. Please try again later.');
+      // Set empty array to prevent undefined errors
       setUniversities([]);
     }
   };
@@ -236,9 +235,7 @@ const SignUp = () => {
                   className="flex-1 p-2 border rounded"
                 >
                   <option value="">Select University</option>
-                  {universities.map((uni, index) => (
-                    <option key={index} value={uni.name}>{uni.name}</option>
-                  ))}
+                  {renderUniversityOptions()}
                 </select>
                 <button
                   type="button"
@@ -376,6 +373,14 @@ const SignUp = () => {
       default:
         return null;
     }
+  };
+
+  const renderUniversityOptions = () => {
+    return universities.map((uni) => (
+      <option key={uni.name} value={uni.name}>
+        {uni.name} - {uni.city}, {uni.country}
+      </option>
+    ));
   };
 
   const handleAddUniversity = async () => {
