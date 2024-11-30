@@ -7,7 +7,8 @@
     "dev": "NODE_OPTIONS='--openssl-legacy-provider' vite",
     "build": "NODE_OPTIONS='--openssl-legacy-provider' vite build",
     "lint": "eslint .",
-    "preview": "NODE_OPTIONS='--openssl-legacy-provider' vite preview"
+    "preview": "NODE_OPTIONS='--openssl-legacy-provider' vite preview --host 0.0.0.0 --port $PORT",
+    "start": "NODE_OPTIONS='--openssl-legacy-provider' vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",

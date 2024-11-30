@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: skill3-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: PORT
+        value: 10000
+      - key: NODE_OPTIONS
+        value: --openssl-legacy-provider
