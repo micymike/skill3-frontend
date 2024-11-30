@@ -1,21 +1,91 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import axios from "axios";
+import { Box, Progress, Text } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from '@chakra-ui/react';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: ''
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
     try {
-      await axios.post("https://dummybackend.url/signup", data);
-      alert("Form submitted successfully!");
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/v1/auth/register`, formData);
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate('/dashboard');
+      }
     } catch (error) {
-      console.error(error);
-      alert("An error occurred!");
+      console.error('Registration error:', error);
+      toast({
+        title: 'Registration failed',
+        description: error.response?.data?.error || 'An error occurred',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
+  };
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    
+    // Length check
+    if (password.length >= 8) strength += 1;
+    if (password.length >= 12) strength += 1;
+    
+    // Character type checks
+    if (/[A-Z]/.test(password)) strength += 1;  // Uppercase
+    if (/[a-z]/.test(password)) strength += 1;  // Lowercase
+    if (/[0-9]/.test(password)) strength += 1;  // Numbers
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;  // Special characters
+    
+    return {
+      score: strength,
+      color: strength < 2 ? "red" : strength < 4 ? "orange" : strength < 6 ? "yellow" : "green",
+      text: strength < 2 ? "Weak" : strength < 4 ? "Fair" : strength < 6 ? "Good" : "Strong"
+    };
+  };
+
+  const renderPasswordStrengthIndicator = (password) => {
+    const strength = calculatePasswordStrength(password);
+    
+    return (
+      <Box mt={2}>
+        <Progress
+          value={(strength.score / 6) * 100}
+          size="sm"
+          colorScheme={
+            strength.score < 2 ? "red" : 
+            strength.score < 4 ? "orange" : 
+            strength.score < 6 ? "yellow" : "green"
+          }
+        />
+        <Text fontSize="sm" color={strength.color} mt={1}>
+          Password Strength: {strength.text}
+        </Text>
+        <Text fontSize="xs" color="gray.400" mt={1}>
+          Use 8+ characters with a mix of letters, numbers & symbols
+        </Text>
+      </Box>
+    );
   };
 
   return (
@@ -79,6 +149,8 @@ const Register = () => {
               <input
                 type="email"
                 name="email"
+                value={formData.email}
+                onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -88,6 +160,8 @@ const Register = () => {
               <input
                 type="text"
                 name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -97,9 +171,12 @@ const Register = () => {
               <input
                 type="password"
                 name="password"
+                value={formData.password}
+                onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded focus:ring-2 focus:ring-blue-500 transition"
               />
+              {renderPasswordStrengthIndicator(formData.password)}
             </div>
             <button
               type="submit"

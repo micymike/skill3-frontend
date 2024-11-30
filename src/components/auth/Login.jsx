@@ -1,177 +1,169 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaLinkedin, FaEye, FaEyeSlash } from 'react-icons/fa';
-
-const apiUrl = ''; // Empty string to use proxy
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  VStack,
+  Container,
+  Heading,
+  useColorModeValue,
+  Text,
+  Icon,
+  InputGroup,
+  InputRightElement,
+  IconButton,
+  useToast
+} from '@chakra-ui/react';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
 
-  const handleLinkedInLogin = () => {
-    localStorage.setItem('loginRedirectUrl', window.location.href);
-    window.location.href = '/v1/auth/linkedin/login';
+  // Dark theme colors
+  const bgColor = useColorModeValue('gray.800', 'gray.800');
+  const textColor = useColorModeValue('gray.100', 'gray.100');
+  const borderColor = useColorModeValue('gray.600', 'gray.600');
+  const inputBgColor = useColorModeValue('gray.700', 'gray.700');
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/v1/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userEmail', email);
+      const data = await response.json();
 
-        // Navigate based on next step
-        if (data.nextStep) {
-          navigate(`/onboarding/${data.nextStep}`);
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || errorData.msg || 'Invalid email or password');
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('An error occurred. Please try again.');
+
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      toast({
+        title: 'Login successful',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      navigate('/dashboard');
+    } catch (error) {
+      toast({
+        title: 'Login failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Image */}
-      <div className="hidden md:flex w-1/2 bg-black relative overflow-hidden">
-        <img
-          src="/login.jpeg"
-          alt="Login Illustration"
-          className="absolute w-full h-full object-cover"
-        />
-      </div>
+    <Container maxW="container.sm" py={8}>
+      <Box
+        p={8}
+        bg={bgColor}
+        boxShadow="xl"
+        borderRadius="lg"
+        color={textColor}
+      >
+        <VStack spacing={6}>
+          <Heading size="lg">Welcome Back</Heading>
 
-      {/* Right side - Login Form */}
-      <div className="w-full md:w-1/2 bg-black p-8 flex flex-col justify-center">
-        <div className="max-w-md mx-auto w-full">
-          <div className="space-y-8">
-            {/* Logo and Header */}
-            <div className="text-center space-y-4">
-              <img
-                src="/logo.png"
-                alt="Skill3 Logo"
-                className="h-20 w-20 mx-auto object-contain"
-              />
-              <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
-              <p className="text-gray-400 text-lg">
-                Sign in to continue your journey
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* LinkedIn Button */}
-              <button
-                type="button"
-                onClick={handleLinkedInLogin}
-                className="w-full flex items-center justify-center gap-2 bg-[#0077b5] text-white py-3 px-4 rounded-lg hover:bg-[#006291] transition-colors"
-              >
-                <FaLinkedin className="text-xl" />
-                Sign in with LinkedIn
-              </button>
-
-              {/* Divider */}
-              <div className="relative flex items-center">
-                <div className="flex-grow border-t border-gray-700"></div>
-                <span className="flex-shrink mx-4 text-gray-400">or</span>
-                <div className="flex-grow border-t border-gray-700"></div>
-              </div>
-
-              {/* Email Input */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>
+                  <Icon as={FaEnvelope} mr={2} />
                   Email
-                </label>
-                <input
-                  id="email"
+                </FormLabel>
+                <Input
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  bg={inputBgColor}
+                  color={textColor}
+                  borderColor={borderColor}
                 />
-              </div>
+              </FormControl>
 
-              {/* Password Input */}
-              <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+              <FormControl isRequired>
+                <FormLabel>
+                  <Icon as={FaLock} mr={2} />
                   Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
+                </FormLabel>
+                <InputGroup>
+                  <Input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    bg={inputBgColor}
+                    color={textColor}
+                    borderColor={borderColor}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-              </div>
+                  <InputRightElement>
+                    <IconButton
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      icon={showPassword ? <FaEyeSlash /> : <FaEye />}
+                      onClick={() => setShowPassword(!showPassword)}
+                      variant="ghost"
+                      colorScheme="gray"
+                    />
+                  </InputRightElement>
+                </InputGroup>
+              </FormControl>
 
-              {/* Error Message */}
-              {error && (
-                <p className="text-red-500 text-sm">{error}</p>
-              )}
-
-              {/* Submit Button */}
-              <button
+              <Button
                 type="submit"
-                disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
-                }`}
+                colorScheme="teal"
+                width="100%"
+                mt={4}
+                isLoading={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
-              </button>
+                Sign In
+              </Button>
+            </VStack>
+          </form>
 
-              {/* Sign Up Link */}
-              <p className="text-center text-gray-400">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => navigate('/signup')}
-                  className="text-blue-500 hover:text-blue-400 font-medium"
-                >
-                  Sign Up
-                </button>
-              </p>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Text color={textColor}>
+            Don't have an account?{' '}
+            <Link to="/register" style={{ color: '#38B2AC', textDecoration: 'underline' }}>
+              Sign up
+            </Link>
+          </Text>
+        </VStack>
+      </Box>
+    </Container>
   );
 };
 
