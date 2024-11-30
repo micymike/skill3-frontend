@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaLinkedin } from "react-icons/fa";
-import { Box, Progress, Text, useToast } from '@chakra-ui/react';
+import {  Progress, Text, useToast } from '@chakra-ui/react';
 import axios from "axios";
 
 const SignUp = () => {
