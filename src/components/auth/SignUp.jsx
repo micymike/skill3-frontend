@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaLinkedin } from "react-icons/fa";
-import {  Progress, Text, useToast } from '@chakra-ui/react';
-import axios from "axios";
+import { Progress, Text, useToast } from '@chakra-ui/react';
+import { registerUser } from '../../services/authService';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -49,13 +49,11 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/v1/auth/register`,
-        formData
-      );
-      if (response.data.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+      const response = await registerUser(formData);
+      
+      if (response.access_token) {
+        localStorage.setItem("token", response.access_token);
+        localStorage.setItem("user", JSON.stringify(response.user));
         toast({
           title: "Registration successful",
           status: "success",
